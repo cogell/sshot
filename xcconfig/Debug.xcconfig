@@ -1,0 +1,10 @@
+// Debug.xcconfig
+//
+// Committed to the repo. Contains non-secret debug build settings.
+//
+// Create Debug.local.xcconfig (gitignored) with your secrets:
+//   DEVELOPMENT_TEAM = YOUR_TEAM_ID
+//   SPARKLE_PUBLIC_KEY = YOUR_KEY
+
+#include? "Debug.local.xcconfig"
+

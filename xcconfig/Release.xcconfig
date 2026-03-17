@@ -1,0 +1,10 @@
+// Release.xcconfig
+//
+// Committed to the repo. Contains non-secret release build settings.
+//
+// Create Release.local.xcconfig (gitignored) with your secrets:
+//   DEVELOPMENT_TEAM = YOUR_TEAM_ID
+//   SPARKLE_PUBLIC_KEY = YOUR_KEY
+
+#include? "Release.local.xcconfig"
+

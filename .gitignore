@@ -1,3 +1,17 @@
+# Xcode
+*.xcodeproj/
+DerivedData/
+*.xcworkspace/xcuserdata/
+*.xcuserstate
+
+# Secrets — never commit
+*.p8
+*.p12
+sparkle_private_key*
+xcconfig/*.local.xcconfig
+
+# macOS
+.DS_Store
 
 # Dolt database files (added by bd init)
 .dolt/

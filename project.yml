@@ -1,0 +1,54 @@
+name: SSHot
+options:
+  deploymentTarget:
+    macOS: "14.0"
+  xcodeVersion: "1600"  # XcodeGen format: "0910", "1600", etc.
+
+configs:
+  Debug: debug
+  Release: release
+
+configFiles:
+  Debug: xcconfig/Debug.xcconfig
+  Release: xcconfig/Release.xcconfig
+
+packages:
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    from: 2.0.0
+
+targets:
+  SSHot:
+    type: application
+    platform: macOS
+    sources: SSHot/
+    info:
+      path: SSHot/Info.plist
+      properties:
+        LSUIElement: true                        # no Dock icon
+        SUPublicEDKey: "$(SPARKLE_PUBLIC_KEY)"   # set via xcconfig or build setting
+        SUFeedURL: "https://cogell.github.io/sshot/appcast.xml"
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"  # e.g. "1.0.0"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"       # build number — Sparkle uses this for update comparison
+        NSHumanReadableCopyright: "© 2026 cogell"
+    # Entitlements: Debug uses SSHot.entitlements (with disable-library-validation=true for Sparkle XPC).
+    # Release uses SSHotRelease.entitlements (empty — no library validation bypass in production).
+    # Cannot use build-setting variable substitution for boolean plist values in entitlements.
+    settings:
+      configs:
+        Debug:
+          CODE_SIGN_ENTITLEMENTS: SSHot/SSHot.entitlements
+        Release:
+          CODE_SIGN_ENTITLEMENTS: SSHot/SSHotRelease.entitlements
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.cogell.sshot
+        ENABLE_HARDENED_RUNTIME: YES              # required for notarization
+        SWIFT_VERSION: "6.0"                     # swiftVersion is not a valid XcodeGen option — set here instead
+        SWIFT_STRICT_CONCURRENCY: complete       # explicit — Swift 6 implies it, but be clear
+        CODE_SIGN_STYLE: Automatic
+        MARKETING_VERSION: "1.0.0"
+        CURRENT_PROJECT_VERSION: "1"             # bump on each build — Sparkle uses this for update comparison
+        DEVELOPMENT_TEAM: "$(DEVELOPMENT_TEAM)"  # set in xcconfig
+    dependencies:
+      - package: Sparkle
+        product: Sparkle
