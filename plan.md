@@ -18,69 +18,83 @@ A macOS menu bar app that monitors the clipboard for images and automatically up
 
 ## Tech Stack
 
-- **Language**: Swift
-- **UI**: AppKit — `NSStatusItem` for menu bar
-- **Clipboard monitoring**: Poll `NSPasteboard.changeCount` every 0.5s, check for image types
+- **Language**: Swift 6 (strict concurrency)
+- **UI**: AppKit + SwiftUI hybrid — `NSStatusItem` for menu bar, SwiftUI for settings panel
+- **No Dock icon**: `LSUIElement = YES` in `Info.plist`
+- **Clipboard monitoring**: Poll `NSPasteboard.changeCount` every 150ms, check for image types
 - **Upload**: `scp` via Foundation's `Process`
-- **Config persistence**: `UserDefaults`
-- **Distribution**: GitHub Releases as `.app` bundle inside `.dmg`
+- **Config persistence**: `UserDefaults` under `com.cogell.sshot`
+- **Launch at login**: `SMAppService` (macOS 13+ API)
+- **Auto-updates**: Sparkle framework tied to GitHub Releases
+- **Minimum macOS**: 14.0
+- **Distribution**: GitHub Releases (`.dmg`) + Homebrew cask
 
 ## Features
 
 ### MVP
 - [ ] Clipboard image detection (poll `NSPasteboard` for `public.png` / `public.tiff` / `NSImage`)
+- [ ] 80ms grace delay before reading clipboard (handles "promised" lazy-loaded pasteboard data from apps like CleanShot X)
+- [ ] Self-loop prevention via custom pasteboard marker type `com.cogell.sshot.marker` — prevents re-triggering when SSHot writes the path back to clipboard
 - [ ] Extract image from clipboard as PNG
 - [ ] SCP upload to configured remote host
 - [ ] Timestamped remote filename: `~/.paste/YYYY-MM-DDTHHMMSS.png`
 - [ ] Replace local clipboard with remote path string after upload
+- [ ] Animated menu bar icon when upload fires (ambient feedback, no focus steal)
 - [ ] macOS notification on success/failure
 
 ### Menu Bar UI
 - [ ] Status icon (camera, dimmed/greyed when disabled)
 - [ ] Toggle: Enabled / Disabled
-- [ ] Settings submenu:
-  - SSH Host (default: `home`)
-  - Remote path (default: `~/.paste/`)
-- [ ] Last upload: timestamp + path (read-only)
+- [ ] Last upload: path + timestamp (read-only, click to copy path again)
+- [ ] Open Settings…
 - [ ] Quit
 
+### Settings Panel (SwiftUI, tabbed)
+- [ ] **General tab**: SSH Host (default: `home`), Remote path (default: `~/.paste/`), Launch at Login toggle
+- [ ] **About tab**: version, links to GitHub, update check via Sparkle
+
 ### Post-MVP
-- [ ] Upload history list in menu (last N uploads)
+- [ ] Upload history list in menu (last N uploads, click to re-copy path)
 - [ ] Multiple SSH host profiles
 - [ ] Retry logic on upload failure
-- [ ] Homebrew cask distribution
-- [ ] Support CleanShot X's "All-in-One" mode (saves file + clipboard)
+- [ ] `rsync` as alternative to `scp` (better for flaky connections)
+- [ ] CLI companion (`sshot` binary): pipe stdin or pass file path, same upload logic, exits 0 on success
 
 ## Architecture
 
 ```
 SSHot/
-├── SSHotApp.swift              # @main entry point, NSApplication setup
-├── AppDelegate.swift           # App lifecycle
-├── StatusBarController.swift   # NSStatusItem, NSMenu, user actions
-├── ClipboardWatcher.swift      # Timer-based NSPasteboard poller
-├── Uploader.swift              # scp via Process, async with callback
+├── SSHotApp.swift              # @main entry point, NSApplication setup, LSUIElement
+├── AppDelegate.swift           # App lifecycle, wires components together
+├── StatusBarController.swift   # NSStatusItem, NSMenu, animated icon
+├── ClipboardWatcher.swift      # 150ms NSPasteboard poller, self-loop guard
+├── Uploader.swift              # scp via Process, async/await, error capture
 ├── Settings.swift              # UserDefaults-backed config (host, path)
-└── Assets.xcassets/            # App icon, menu bar icon
+├── SettingsView.swift          # SwiftUI tabbed settings panel
+└── Assets.xcassets/            # App icon, menu bar icon (template image)
 ```
 
 ### Key design notes
-- `ClipboardWatcher` tracks `changeCount` to avoid re-triggering on same clipboard contents
-- After upload, SSHot writes the path string to clipboard — this resets `changeCount`, but the new content is text not image, so it won't re-trigger
-- `Uploader` runs `scp` as a subprocess; stdout/stderr captured for error reporting
-- Settings are stored in `UserDefaults` under `com.cogell.sshot`
+
+- **Self-loop guard**: `ClipboardWatcher` writes a sentinel value (`com.cogell.sshot.marker`) to the pasteboard alongside the path string. On each poll, if this marker is present on the current pasteboard, skip processing. Learned from Trimmy's `com.steipete.trimmy` pattern.
+- **Promised data grace delay**: After `changeCount` changes, wait 80ms before reading. CleanShot X and other apps may use NSPasteboard's lazy-loading ("promised") mechanism — reading too early returns empty data.
+- **Polling interval**: 150ms (matches Trimmy's proven interval — fast enough to feel instant, low enough CPU impact).
+- **Upload is async**: `Uploader` uses `async/await`; `StatusBarController` shows an in-progress state (spinner or animated icon) during upload.
+- **`LSUIElement`**: Set in `Info.plist` to suppress Dock icon — pure menu bar app.
+- **`SMAppService`**: Used for Launch at Login instead of old LaunchAgent plist approach.
 
 ## Distribution
 
-- GitHub Actions: build `.app` → package `.dmg` → attach to GitHub Release on tag push
-- README install instructions: download `.dmg` from releases, drag to Applications, allow in System Settings > Privacy & Security
-- Homebrew cask (stretch goal)
+- GitHub Actions CI: build `.app` → notarize → package `.dmg` → attach to GitHub Release on tag push
+- Sparkle auto-update checks against GitHub Releases appcast
+- Homebrew cask: `brew install --cask cogell/tap/sshot`
 - MIT License
 
 ## Prior Art
 
-- [claude-screenshot-uploader](https://github.com/mdrzn/claude-screenshot-uploader) — folder-watcher approach, xbar UI, bash script
-- [claudecode-remote-server-copypaste-image](https://github.com/ooiyeefei/claudecode-remote-server-copypaste-image) — similar, uses rsync + launchd
-- Ghostty [discussion #10517](https://github.com/ghostty-org/ghostty/discussions/10517) — proposed native terminal-level SSH image paste (not merged)
+- [claude-screenshot-uploader](https://github.com/mdrzn/claude-screenshot-uploader) — folder-watcher approach, xbar UI, bash script; does not handle clipboard images
+- [claudecode-remote-server-copypaste-image](https://github.com/ooiyeefei/claudecode-remote-server-copypaste-image) — similar folder-watcher, rsync + launchd
+- Ghostty [discussion #10517](https://github.com/ghostty-org/ghostty/discussions/10517) — proposed native terminal-level SSH image paste (not merged as of Feb 2026)
+- [Trimmy](https://trimmy.app) — clipboard-monitoring menu bar app for trimming shell commands; informed our NSPasteboard polling strategy (150ms interval, 80ms grace delay, self-loop marker type, `LSUIElement`, `SMAppService`, Sparkle, animated icon pattern)
 
-SSHot differentiates by being clipboard-first, native Swift, and having a proper toggle-able menu bar UI.
+SSHot differentiates from the SSH uploaders by being clipboard-first. It differentiates from Trimmy by targeting a different clipboard content type (images vs text) and performing a network operation rather than local transformation.
