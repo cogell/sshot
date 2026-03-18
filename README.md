@@ -11,15 +11,21 @@ A macOS menu bar app that monitors your clipboard for images and automatically u
 3. Your clipboard is replaced with the remote file path
 4. Paste the path into your remote terminal session
 
-## Quick Start
+## Install
+
+```bash
+brew install cogell/tap/sshot
+```
+
+Then launch SSHot from your Applications folder, configure your SSH host and remote path in Settings, and toggle Enabled in the menu bar.
+
+### Build from source
 
 ```bash
 xcodegen generate
 open SSHot.xcodeproj
 # Build and run (Cmd+R)
 ```
-
-Configure your SSH host and remote path in Settings, then toggle Enabled in the menu bar.
 
 See [Getting Started](docs/getting-started.md) for full setup instructions.
 
@@ -51,7 +57,7 @@ See [Getting Started](docs/getting-started.md) for full setup instructions.
 
 ## Distribution
 
-GitHub Releases (.dmg) and Homebrew cask. Not on the Mac App Store (incompatible with App Sandbox — see [ADR-002](docs/decisions/002-no-app-sandbox.md)).
+Homebrew (`brew install cogell/tap/sshot`) and [GitHub Releases](https://github.com/cogell/sshot/releases). Not on the Mac App Store (incompatible with App Sandbox — see [ADR-002](docs/decisions/002-no-app-sandbox.md)).
 
 ## License
 
