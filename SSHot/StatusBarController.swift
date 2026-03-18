@@ -312,6 +312,10 @@ final class StatusBarController {
 
             testConnectionItem.isEnabled = true
 
+            // Pop the menu open so the user sees the result
+            // without needing to manually re-click.
+            statusItem.button?.performClick(nil)
+
             // Revert to "Test Connection" after 3 seconds.
             // Use do/catch (not try?) so cancellation prevents the title reset —
             // otherwise a cancelled old task would overwrite a new test's result.
@@ -367,11 +371,6 @@ final class StatusBarController {
 
     fileprivate func handleTestConnection() {
         runTestConnection()
-        // Re-open the menu after a brief delay so the user sees
-        // "Testing..." and the result without needing to re-click.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
-            self?.statusItem.button?.performClick(nil)
-        }
     }
 
     fileprivate func handleOpenSettings() {

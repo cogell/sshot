@@ -17,6 +17,9 @@ build/
 # macOS
 .DS_Store
 
+# Playwright CLI session artifacts
+.playwright-cli/
+
 # Dolt database files (added by bd init)
 .dolt/
 *.db
