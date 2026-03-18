@@ -10,6 +10,10 @@ DerivedData/
 sparkle_private_key*
 xcconfig/*.local.xcconfig
 
+# Build artifacts
+build/
+*.zip
+
 # macOS
 .DS_Store
 

@@ -46,8 +46,8 @@ targets:
         SWIFT_VERSION: "6.0"                     # swiftVersion is not a valid XcodeGen option — set here instead
         SWIFT_STRICT_CONCURRENCY: complete       # explicit — Swift 6 implies it, but be clear
         CODE_SIGN_STYLE: Automatic
-        MARKETING_VERSION: "1.0.0"
-        CURRENT_PROJECT_VERSION: "1"             # bump on each build — Sparkle uses this for update comparison
+        MARKETING_VERSION: "1.1.0"
+        CURRENT_PROJECT_VERSION: "2"             # bump on each build — Sparkle uses this for update comparison
         DEVELOPMENT_TEAM: "$(DEVELOPMENT_TEAM)"  # set in xcconfig
     dependencies:
       - package: Sparkle

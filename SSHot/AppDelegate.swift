@@ -56,10 +56,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // iteration for automatic update checks). The startingUpdater parameter controls
         // whether Sparkle starts automatically; we set it to true for standard behavior.
         updaterController = SPUStandardUpdaterController(
-            startingUpdater: true,
+            startingUpdater: false,
             updaterDelegate: nil,
             userDriverDelegate: nil
         )
+        // Don't auto-check until Sparkle keys and appcast are configured.
+        // The "Check for Updates" button in Settings still works manually.
 
         // --- Notification Manager ---
         notificationManager = NotificationManager()
