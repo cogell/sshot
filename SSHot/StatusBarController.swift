@@ -273,8 +273,14 @@ final class StatusBarController {
             do {
                 // Use SSHBaseArgs for consistency with actual upload path
                 // (same StrictHostKeyChecking, IdentitiesOnly, etc.)
+                //
+                // Note: we deliberately do NOT pass `-q` here. Quiet mode suppresses
+                // ssh's diagnostic stderr ("Permission denied", "Connection refused",
+                // host-key warnings), which is exactly the text `SSHotError.classify`
+                // needs to produce an actionable result title. Without it, every
+                // failure collapses to the generic "Connection failed (exit 255)".
                 var args = SSHBaseArgs.sshBaseArgs(settings: settings)
-                args += ["-q", "-o", "ConnectTimeout=5", "-o", "ServerAliveInterval=5", "-o", "ServerAliveCountMax=1"]
+                args += ["-o", "ConnectTimeout=5", "-o", "ServerAliveInterval=5", "-o", "ServerAliveCountMax=1"]
                 args += [host, "exit"]
 
                 let result = try await runProcessThrowing(
